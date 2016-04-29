@@ -8,10 +8,13 @@
 #include <functional>
 #include <array>
 #include <algorithm>
+#include <cassert>
 
 using namespace std;
 
 const int SALARY_MAX = 50000;
+const double PERCENTAGE_TO_PRUNE = 0.5;
+const int NUM_TEAMS = 100;
 
 enum class BaseballPositionsEnum
 {
@@ -30,7 +33,7 @@ std::string BaseballPositionEnumToString(BaseballPositionsEnum position)
 	switch (position)
 	{
 	case BaseballPositionsEnum::PITCHER:
-		return "P";
+		return "SP";
 	case BaseballPositionsEnum::CATCHER:
 		return "C";
 	case BaseballPositionsEnum::OUTFIELDER:
@@ -51,7 +54,7 @@ std::string BaseballPositionEnumToString(BaseballPositionsEnum position)
 BaseballPositionsEnum StringToBaseballPositionEnum(std::string position)
 {
 	// @TODO consider players with multiple positions
-	if (position == "P")
+	if (position == "SP")
 		return BaseballPositionsEnum::PITCHER;
 	else if (position == "C")
 		return BaseballPositionsEnum::CATCHER;
@@ -69,24 +72,52 @@ BaseballPositionsEnum StringToBaseballPositionEnum(std::string position)
 		throw 1;
 }
 
+int NumPlayersInPosition(BaseballPositionsEnum position)
+{
+	switch (position)
+	{
+	case BaseballPositionsEnum::PITCHER:
+		return 2;
+	case BaseballPositionsEnum::CATCHER:
+		return 1;
+	case BaseballPositionsEnum::OUTFIELDER:
+		return 3;
+	case BaseballPositionsEnum::SHORTSTOP:
+		return 1;
+	case BaseballPositionsEnum::FIRSTBASE:
+		return 1;
+	case BaseballPositionsEnum::SECONDBASE:
+		return 1;
+	case BaseballPositionsEnum::THIRDBASE:
+		return 1;
+	default:
+		throw 1;
+	}
+}
+
 // Generates all subsets of size r from n
 // When finished, call Reset() to generate all subsets again
 class NChooseRClass
 {
 	std::vector<bool> m_selectionsVector;
-	int m_n, m_r;
-	bool m_isFinished;
+	int m_n = 0, m_r = 0;
+	bool m_isFinished = false;
 
 public:
-	NChooseRClass(int _n, int _r)
-		: m_n(_n), m_r(_r), m_isFinished(false)
+
+	void Initialize(int n, int r)
 	{
+		m_n = n;
+		m_r = r;
+
 		m_selectionsVector.resize(m_n);
 		std::fill(m_selectionsVector.begin() + m_n - m_r, m_selectionsVector.end(), true);
 	}
 
 	std::vector<int> GetNextPermutation()
 	{
+		assert(m_n != 0 && m_r != 0);
+
 		if (m_isFinished)
 			throw 1;
 
@@ -125,7 +156,6 @@ class BaseballPlayerClass
 	std::string m_name;
 
 public:
-	BaseballPlayerClass();
 	BaseballPlayerClass(const std::string &name, float points, int salary, BaseballPositionsEnum position) :
 		m_name(name), m_points(points), m_salary(salary), m_position(position), m_pointsPerSalary(points / salary) { }
 
@@ -133,6 +163,7 @@ public:
 	int GetSalary() const { return m_salary; }
 	float GetPointsPerSalary() const { return m_pointsPerSalary; }
 	BaseballPositionsEnum GetPositionFromPlayer() const { return m_position; }
+	std::string GetName() const { return m_name; }
 };
 
 // Holds results of a player subset from a position
@@ -151,9 +182,8 @@ struct PositionResultsStruct
 // Returns subsets of players from GetNextPermutation()
 class BaseballPositionClass
 {
-	// order matters here in case of std::move of players
 	NChooseRClass m_chooser;
-	vector<BaseballPlayerClass> m_players;
+	vector<BaseballPlayerClass> m_players; // MAINTAIN THE ORDER OF THIS YOU SHIT
 	bool m_isFinished;
 
 	BaseballPositionsEnum m_position;
@@ -163,7 +193,7 @@ class BaseballPositionClass
 
 	const int m_numPlayersFromPositionInFinalTeam;
 
-	void PruneLowestPointsPerSalary(double percentageOfAverageToPrune)
+	void PruneLowestPointsPerSalary()
 	{
 		double positionSalaryTotal = 0, positionPointsTotal = 0;
 		for (auto iter = m_players.begin(); iter != m_players.end(); iter++)
@@ -174,31 +204,41 @@ class BaseballPositionClass
 
 		const double averagePointsPerSalary = positionPointsTotal / positionSalaryTotal;
 
-		std::remove_if(m_players.begin(), m_players.end(),
-			[&](const BaseballPlayerClass &player)
-		{
-			return player.GetPointsPerSalary() < 0.5 * percentageOfAverageToPrune;
-		});
+		auto new_end = 
+			std::remove_if(m_players.begin(), m_players.end(),
+				[averagePointsPerSalary](const BaseballPlayerClass &player)
+				{
+					bool asdf = player.GetPointsPerSalary() < PERCENTAGE_TO_PRUNE * averagePointsPerSalary;
+					return asdf;
+				});
+
+		m_players.erase(new_end, m_players.end());
+		m_players.shrink_to_fit();
 	}
 
 public:
-	BaseballPositionClass(const std::vector<BaseballPlayerClass> &players, int r)
-		: m_players(players), m_chooser(players.size(), r), m_numPlayersFromPositionInFinalTeam(r)
+	BaseballPositionClass(const std::vector<BaseballPlayerClass> &players, BaseballPositionsEnum position)
+		: m_players(players), m_position(position), m_numPlayersFromPositionInFinalTeam(NumPlayersInPosition(position))
 	{
-		PruneLowestPointsPerSalary(0.5);
+		PruneLowestPointsPerSalary();
+
+		m_chooser.Initialize(m_players.size(), m_numPlayersFromPositionInFinalTeam);
 
 		std::priority_queue<float> highestPointsPerPlayer;
 		for (const auto &player : m_players)
 			highestPointsPerPlayer.push(player.GetPoints());
 
-		for (int i = 0; i < r; i++)
+		for (int i = 0; i < m_numPlayersFromPositionInFinalTeam; i++)
 		{
 			m_maxPoints += highestPointsPerPlayer.top();
 			highestPointsPerPlayer.pop();
 		}
 
 		std::priority_queue<int, std::vector<int>, std::greater<int>> lowestSalaryPerPlayer;
-		for (int i = 0; i < r; i++)
+		for (const auto &player : m_players)
+			lowestSalaryPerPlayer.push(player.GetSalary());
+
+		for (int i = 0; i < m_numPlayersFromPositionInFinalTeam; i++)
 		{
 			m_minSalary += lowestSalaryPerPlayer.top();
 			lowestSalaryPerPlayer.pop();
@@ -229,6 +269,12 @@ public:
 	int GetMinSalary() const { return m_minSalary; }
 	BaseballPositionsEnum GetPosition() const { return m_position; }
 
+	// these can be prettier but w/e i'm a genius
+	std::string IndexToPlayerName(int index) const { return m_players[index].GetName(); }
+	float IndexToPlayerPoints(int index) const { return m_players[index].GetPoints(); }
+	int IndexToPlayerSalary(int index) const { return m_players[index].GetSalary(); }
+	float IndexToPlayerPointsPerSalary(int index) const { return m_players[index].GetPointsPerSalary(); }
+
 	bool IsFinished() const { return m_isFinished; }
 
 	void Reset()
@@ -253,7 +299,7 @@ public:
 		m_teamPoints += positionResults.points;
 
 		auto &positionPlayerSet = playerIndices[positionResults.position];
-		for (auto selection : positionPlayerSet)
+		for (auto selection : positionResults.selections)
 			positionPlayerSet.insert(selection);
 	}
 
@@ -267,6 +313,10 @@ public:
 
 	int GetTeamSalary() const { return m_teamSalary; }
 	float GetTeamPoints() const { return m_teamPoints; }
+	std::unordered_map<BaseballPositionsEnum, std::set<int>> GetPlayers()
+	{
+		return playerIndices;
+	}
 };
 
 bool operator < (const TeamClass &lhs, const TeamClass &rhs)
@@ -306,5 +356,19 @@ public:
 			return 0;
 
 		return bestTeams.top().GetTeamPoints();
+	}
+
+	std::priority_queue<TeamClass> GetBestTeams() const
+	{
+		auto bestTeamsCopy = bestTeams;
+
+		std::priority_queue<TeamClass> returnSet;
+		while (bestTeamsCopy.size())
+		{
+			returnSet.push(std::move(bestTeamsCopy.top()));
+			bestTeamsCopy.pop();
+		}
+
+		return returnSet;
 	}
 };
