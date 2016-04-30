@@ -2,19 +2,21 @@
 #include <fstream>
 #include <sstream>
 
-vector<BaseballPositionClass> ReadFromCsv(std::string filepath);
+std::set<std::string> GetPlayerNamesFromFile(std::string filepath);
+
+vector<BaseballPositionClass> ReadFromCsv(std::string filepath, std::set<std::string> playersInLineup);
 
 void PrettyPrint(const BestNTeamsClass &bestNTeams, const vector<BaseballPositionClass> &positions)
 {
-	ofstream file("C:\\Users\\Nathan\\Downloads\\DKSalaries (5) team output.txt");
+	ofstream file("C:\\Users\\Nathan\\Downloads\\DKSalaries (6) team output.txt lineup 429523");
 	auto bestTeamsInOrder = bestNTeams.GetBestTeams();
 
-	auto GetPlayerNameFromPositionAndIndex = [&](BaseballPositionsEnum position, int index)
+	auto GetPlayerNameFromPositionAndIndex = [&](BaseballPositionsEnum position, int index) -> double
 	{
 		std::string name;
-		float expectedPoints;
+		double expectedPoints;
 		int salary;
-		float pointsPerSalary;
+		double pointsPerSalary;
 		for (auto iter = positions.begin(); iter != positions.end(); iter++)
 		{
 			if (iter->GetPosition() == position)
@@ -25,9 +27,11 @@ void PrettyPrint(const BestNTeamsClass &bestNTeams, const vector<BaseballPositio
 				pointsPerSalary = iter->IndexToPlayerPointsPerSalary(index);
 
 				file << BaseballPositionEnumToString(position) << ": " << name << " AvgPts: " << expectedPoints << " Salary: " << salary << endl;
-				return;
+				return expectedPoints;
 			}
 		}
+
+		return 0;
 	};
 
 	int i = 0;
@@ -38,22 +42,48 @@ void PrettyPrint(const BestNTeamsClass &bestNTeams, const vector<BaseballPositio
 
 		auto bestPlayers = bestTeamCandidate.GetPlayers();
 
+		double totalTeamPoints = 0;
 		for (const auto &positionPlayerSetPair : bestPlayers)
 		{
 			for (const auto& playerIndex : positionPlayerSetPair.second)
-				GetPlayerNameFromPositionAndIndex(positionPlayerSetPair.first, playerIndex);
+			{
+				totalTeamPoints += GetPlayerNameFromPositionAndIndex(positionPlayerSetPair.first, playerIndex);
+			}
 
 		}
-		
+		file << "TOTAL POINTS: " << totalTeamPoints << endl;
+
 		file << "\n------------------------------------------------------\n\n";
 
 		bestTeamsInOrder.pop();
 	}
+}
 
+void PrettyPrintTeamsWithDifferences(const BestNTeamsClass &bestNTeams, const vector<BaseballPositionClass> &positions, int numDifferentPlayers)
+{
+	//std::set<TeamClass> bestTeams;
+	//auto bestTeamsCopy = bestNTeams.GetBestTeams();
+
+	//while (bestTeamsCopy.size());
+	//{
+	//	bestTeams.insert(std::move(bestTeamsCopy.top()));
+	//	bestTeamsCopy.pop();
+	//}
+
+	//std::set<TeamClass> bestDifferentTeams;
+	//for (auto &team : bestTeams)
+	//{
+	//	bool different = true;
+	//	for (auto &differentTeam : bestDifferentTeams)
+	//	{
+	//		std::vector<
+	//		if(std::set_difference())
+	//	}
+	//}
 
 }
 
-void PositionRecurserHelper(vector<BaseballPositionClass> &positions, int currentPositionIndex, BestNTeamsClass &bestNTeams, TeamClass &currentTeam, const vector<int> &minSalaryFromIndex, const vector<float> maxPointsFromIndex)
+void PositionRecurserHelper(vector<BaseballPositionClass> &positions, int currentPositionIndex, BestNTeamsClass &bestNTeams, TeamClass &currentTeam, const vector<int> &minSalaryFromIndex, const vector<double> maxPointsFromIndex)
 {
 	// prune!
 	if (currentTeam.GetTeamSalary() + minSalaryFromIndex[currentPositionIndex] > SALARY_MAX ||
@@ -97,7 +127,7 @@ BestNTeamsClass PositionRecurser(vector<BaseballPositionClass> &positions)
 	for (int i = positions.size() - 1; i >= 0; i--)
 		minSalaryFromIndex[i] = positions[i].GetMinSalary() + minSalaryFromIndex[i + 1];
 
-	vector<float> maxPointsFromIndex(positions.size() + 1);
+	vector<double> maxPointsFromIndex(positions.size() + 1);
 	for (int i = positions.size() - 1; i >= 0; i--)
 		maxPointsFromIndex[i] = positions[i].GetMaxPoints() + maxPointsFromIndex[i + 1];
 
@@ -112,7 +142,8 @@ BestNTeamsClass PositionRecurser(vector<BaseballPositionClass> &positions)
 
 int main()
 {
-	auto positionList = ReadFromCsv("C:\\Users\\Nathan\\Downloads\\DKSalaries (5).csv");
+	std::set<std::string> playerNames = GetPlayerNamesFromFile("C:\\Users\\Nathan\\Downloads\\playernames429.txt");
+	auto positionList = ReadFromCsv("C:\\Users\\Nathan\\Downloads\\DKSalaries (6).csv", playerNames);
 
 	auto bestNTeams = PositionRecurser(positionList);
 
@@ -120,8 +151,30 @@ int main()
 }
 
 
+std::set<std::string> GetPlayerNamesFromFile(std::string filepath)
+{
+	std::set<std::string> playernames;
 
-vector<BaseballPositionClass> ReadFromCsv(std::string filepath)
+	ifstream lineupfile(filepath);
+
+	string line;
+	while (getline(lineupfile, line))
+	{
+		stringstream linestream(line);
+		string name;
+		string asdf;
+		linestream >> asdf >> name;
+		name += " ";
+		linestream >> asdf;
+		name += asdf;
+		playernames.insert(name);
+	}
+
+	return playernames;
+}
+
+
+vector<BaseballPositionClass> ReadFromCsv(std::string filepath, std::set<std::string> playersInLineup)
 {
 	auto RemoveQuotes = [](std::string &inputString)
 		{
@@ -135,14 +188,14 @@ vector<BaseballPositionClass> ReadFromCsv(std::string filepath)
 	string line;
 	getline(csvfile, line);
 	/*
-	BaseballPlayerClass(const std::string &name, float points, int salary, BaseballPositionsEnum position) :
+	BaseballPlayerClass(const std::string &name, double points, int salary, BaseballPositionsEnum position) :
 	m_name(name), m_points(points), m_salary(salary), m_position(position), m_pointsPerSalary(points / salary) { }*/
 
 	string position;
 	string name;
 	int salary;
 	string skip;
-	float points;
+	double points;
 
 	while (getline(csvfile, line))
 	{
@@ -175,7 +228,9 @@ vector<BaseballPositionClass> ReadFromCsv(std::string filepath)
 		{
 			auto positionEnum = StringToBaseballPositionEnum(position);
 			BaseballPlayerClass player(name, points, salary, positionEnum);
-			players[positionEnum].push_back(std::move(player));
+			if (playersInLineup.size() && playersInLineup.count(name)
+				|| playersInLineup.empty())
+					players[positionEnum].push_back(std::move(player));
 		}
 		catch (...)
 		{
@@ -190,6 +245,12 @@ vector<BaseballPositionClass> ReadFromCsv(std::string filepath)
 		BaseballPositionClass baseballPosition(std::move(playersPerPosition.second), positionEnum);
 		returnValue.push_back(std::move(baseballPosition));
 	}
+
+	sort(returnValue.begin(), returnValue.end(),
+			[](const BaseballPositionClass& lhs, const BaseballPositionClass &rhs)
+			{
+				return NumPlayersInPosition(lhs.GetPosition()) > NumPlayersInPosition(rhs.GetPosition());
+		});
 
 	return returnValue;
 }

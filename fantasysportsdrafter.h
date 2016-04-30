@@ -13,7 +13,7 @@
 using namespace std;
 
 const int SALARY_MAX = 50000;
-const double PERCENTAGE_TO_PRUNE = 0.5;
+const double PERCENTAGE_TO_PRUNE = 0.01;
 const int NUM_TEAMS = 100;
 
 enum class BaseballPositionsEnum
@@ -146,22 +146,22 @@ public:
 
 class BaseballPlayerClass
 {
-	float m_points;
+	double m_points;
 	int m_salary;
 
-	float m_pointsPerSalary;
+	double m_pointsPerSalary;
 
 	BaseballPositionsEnum m_position;
 
 	std::string m_name;
 
 public:
-	BaseballPlayerClass(const std::string &name, float points, int salary, BaseballPositionsEnum position) :
+	BaseballPlayerClass(const std::string &name, double points, int salary, BaseballPositionsEnum position) :
 		m_name(name), m_points(points), m_salary(salary), m_position(position), m_pointsPerSalary(points / salary) { }
 
-	float GetPoints() const { return m_points; }
+	double GetPoints() const { return m_points; }
 	int GetSalary() const { return m_salary; }
-	float GetPointsPerSalary() const { return m_pointsPerSalary; }
+	double GetPointsPerSalary() const { return m_pointsPerSalary; }
 	BaseballPositionsEnum GetPositionFromPlayer() const { return m_position; }
 	std::string GetName() const { return m_name; }
 };
@@ -169,12 +169,12 @@ public:
 // Holds results of a player subset from a position
 struct PositionResultsStruct
 {
-	float points = 0;
+	double points = 0;
 	int salary = 0;
 	vector<int> selections;
 	BaseballPositionsEnum position;
 
-	PositionResultsStruct(float _points, int _salary, const vector<int> &_selections, BaseballPositionsEnum _position)
+	PositionResultsStruct(double _points, int _salary, const vector<int> &_selections, BaseballPositionsEnum _position)
 		: points(_points), salary(_salary), selections(_selections), position(_position) { }
 };
 
@@ -188,10 +188,10 @@ class BaseballPositionClass
 
 	BaseballPositionsEnum m_position;
 
-	float m_maxPoints = 0;
+	double m_maxPoints = 0;
 	int m_minSalary = 0;
 
-	const int m_numPlayersFromPositionInFinalTeam;
+	int m_numPlayersFromPositionInFinalTeam;
 
 	void PruneLowestPointsPerSalary()
 	{
@@ -222,9 +222,11 @@ public:
 	{
 		PruneLowestPointsPerSalary();
 
+		sort(m_players.begin(), m_players.end(), [](const BaseballPlayerClass & lhs, const BaseballPlayerClass& rhs) {return lhs.GetPoints() < rhs.GetPoints(); });
+
 		m_chooser.Initialize(m_players.size(), m_numPlayersFromPositionInFinalTeam);
 
-		std::priority_queue<float> highestPointsPerPlayer;
+		std::priority_queue<double> highestPointsPerPlayer;
 		for (const auto &player : m_players)
 			highestPointsPerPlayer.push(player.GetPoints());
 
@@ -250,7 +252,7 @@ public:
 		if (m_isFinished)
 			throw 1;
 
-		float points = 0;
+		double points = 0;
 		int salary = 0;
 
 		auto playerSelection = m_chooser.GetNextPermutation();
@@ -265,15 +267,15 @@ public:
 		return PositionResultsStruct(points, salary, std::move(playerSelection), m_position);
 	}
 
-	float GetMaxPoints() const { return m_maxPoints; }
+	double GetMaxPoints() const { return m_maxPoints; }
 	int GetMinSalary() const { return m_minSalary; }
 	BaseballPositionsEnum GetPosition() const { return m_position; }
 
 	// these can be prettier but w/e i'm a genius
 	std::string IndexToPlayerName(int index) const { return m_players[index].GetName(); }
-	float IndexToPlayerPoints(int index) const { return m_players[index].GetPoints(); }
+	double IndexToPlayerPoints(int index) const { return m_players[index].GetPoints(); }
 	int IndexToPlayerSalary(int index) const { return m_players[index].GetSalary(); }
-	float IndexToPlayerPointsPerSalary(int index) const { return m_players[index].GetPointsPerSalary(); }
+	double IndexToPlayerPointsPerSalary(int index) const { return m_players[index].GetPointsPerSalary(); }
 
 	bool IsFinished() const { return m_isFinished; }
 
@@ -290,7 +292,7 @@ class TeamClass
 	std::unordered_map<BaseballPositionsEnum, std::set<int>>  playerIndices;
 
 	int m_teamSalary;
-	float m_teamPoints;
+	double m_teamPoints;
 
 public:
 	void AddPlayers(PositionResultsStruct positionResults)
@@ -312,7 +314,7 @@ public:
 	}
 
 	int GetTeamSalary() const { return m_teamSalary; }
-	float GetTeamPoints() const { return m_teamPoints; }
+	double GetTeamPoints() const { return m_teamPoints; }
 	std::unordered_map<BaseballPositionsEnum, std::set<int>> GetPlayers()
 	{
 		return playerIndices;
@@ -350,7 +352,7 @@ public:
 		}
 	}
 
-	float GetWorstPointsFromBestTeams() const
+	double GetWorstPointsFromBestTeams() const
 	{
 		if (bestTeams.size() < m_numTeams)
 			return 0;
