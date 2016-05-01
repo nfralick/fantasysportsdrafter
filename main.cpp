@@ -6,33 +6,10 @@ std::set<std::string> GetPlayerNamesFromFile(std::string filepath);
 
 vector<BaseballPositionClass> ReadFromCsv(std::string filepath, std::set<std::string> playersInLineup);
 
-void PrettyPrint(const BestNTeamsClass &bestNTeams, const vector<BaseballPositionClass> &positions)
+void PrettyPrint(const BestNTeamsClass &bestNTeams)
 {
-	ofstream file("C:\\Users\\Nathan\\Downloads\\DKSalaries (6) team output.txt lineup 429523");
+	ofstream file("C:\\Users\\Nathan\\Downloads\\DKSalaries (6) team output.txt lineup 430617");
 	auto bestTeamsInOrder = bestNTeams.GetBestTeams();
-
-	auto GetPlayerNameFromPositionAndIndex = [&](BaseballPositionsEnum position, int index) -> double
-	{
-		std::string name;
-		double expectedPoints;
-		int salary;
-		double pointsPerSalary;
-		for (auto iter = positions.begin(); iter != positions.end(); iter++)
-		{
-			if (iter->GetPosition() == position)
-			{
-				name = iter->IndexToPlayerName(index);
-				expectedPoints = iter->IndexToPlayerPoints(index);
-				salary = iter->IndexToPlayerSalary(index);
-				pointsPerSalary = iter->IndexToPlayerPointsPerSalary(index);
-
-				file << BaseballPositionEnumToString(position) << ": " << name << " AvgPts: " << expectedPoints << " Salary: " << salary << endl;
-				return expectedPoints;
-			}
-		}
-
-		return 0;
-	};
 
 	int i = 0;
 	while (bestTeamsInOrder.size())
@@ -43,13 +20,10 @@ void PrettyPrint(const BestNTeamsClass &bestNTeams, const vector<BaseballPositio
 		auto bestPlayers = bestTeamCandidate.GetPlayers();
 
 		double totalTeamPoints = 0;
-		for (const auto &positionPlayerSetPair : bestPlayers)
+		for (const auto &player : bestPlayers)
 		{
-			for (const auto& playerIndex : positionPlayerSetPair.second)
-			{
-				totalTeamPoints += GetPlayerNameFromPositionAndIndex(positionPlayerSetPair.first, playerIndex);
-			}
-
+			file << BaseballPositionEnumToString(player.GetPositionFromPlayer()) << ": " << player.GetName() << " AvgPts: " << player.GetPoints() << " Salary: " << player.GetSalary() << endl;
+			totalTeamPoints += player.GetPoints();
 		}
 		file << "TOTAL POINTS: " << totalTeamPoints << endl;
 
@@ -59,28 +33,45 @@ void PrettyPrint(const BestNTeamsClass &bestNTeams, const vector<BaseballPositio
 	}
 }
 
-void PrettyPrintTeamsWithDifferences(const BestNTeamsClass &bestNTeams, const vector<BaseballPositionClass> &positions, int numDifferentPlayers)
+void PrettyPrintTeamsWithDifferences(const BestNTeamsClass &bestNTeams, int numDifferentPlayers)
 {
-	//std::set<TeamClass> bestTeams;
-	//auto bestTeamsCopy = bestNTeams.GetBestTeams();
+	std::set<TeamClass> bestTeams;
+	auto bestTeamsCopy = bestNTeams.GetBestTeams();
 
-	//while (bestTeamsCopy.size());
-	//{
-	//	bestTeams.insert(std::move(bestTeamsCopy.top()));
-	//	bestTeamsCopy.pop();
-	//}
+	std::set<TeamClass> bestDifferentTeams;
+	while (bestTeamsCopy.size())
+	{
+		auto team = bestTeamsCopy.top();
+		team.GetPlayers();
 
-	//std::set<TeamClass> bestDifferentTeams;
-	//for (auto &team : bestTeams)
-	//{
-	//	bool different = true;
-	//	for (auto &differentTeam : bestDifferentTeams)
-	//	{
-	//		std::vector<
-	//		if(std::set_difference())
-	//	}
-	//}
+		bestTeamsCopy.pop();
+		auto bestTeamsPlayers = team.GetPlayers();
 
+		bool different = true;
+		for (auto &differentTeam : bestDifferentTeams)
+		{
+			auto differentTeamPlayers = differentTeam.GetPlayers();
+
+			std::vector<BaseballPlayerClass> setdifference;
+			std::set_difference(differentTeamPlayers.begin(), differentTeamPlayers.end(), bestTeamsPlayers.begin(), bestTeamsPlayers.end(), std::inserter(setdifference, setdifference.begin()));
+
+			if (setdifference.size() < numDifferentPlayers)
+				different = false;
+			
+			if (!different)
+				break;
+		}
+
+		if (different)
+			bestDifferentTeams.insert(team);
+	}
+
+	BestNTeamsClass bestNdifferentTeams(NUM_TEAMS);
+
+	for(auto &team : bestDifferentTeams)
+		bestNdifferentTeams.AddTeamIfGood(team);
+
+	PrettyPrint(bestNdifferentTeams);
 }
 
 void PositionRecurserHelper(vector<BaseballPositionClass> &positions, int currentPositionIndex, BestNTeamsClass &bestNTeams, TeamClass &currentTeam, const vector<int> &minSalaryFromIndex, const vector<double> maxPointsFromIndex)
@@ -143,11 +134,12 @@ BestNTeamsClass PositionRecurser(vector<BaseballPositionClass> &positions)
 int main()
 {
 	std::set<std::string> playerNames = GetPlayerNamesFromFile("C:\\Users\\Nathan\\Downloads\\playernames429.txt");
-	auto positionList = ReadFromCsv("C:\\Users\\Nathan\\Downloads\\DKSalaries (6).csv", playerNames);
+	auto positionList = ReadFromCsv("C:\\Users\\Nathan\\Downloads\\DKSalaries (8).csv", playerNames);
 
 	auto bestNTeams = PositionRecurser(positionList);
 
-	PrettyPrint(bestNTeams, positionList);
+	//PrettyPrint(bestNTeams);
+	PrettyPrintTeamsWithDifferences(bestNTeams, 6);
 }
 
 
@@ -205,7 +197,7 @@ vector<BaseballPositionClass> ReadFromCsv(std::string filepath, std::set<std::st
 		int i = 0;
 		while (getline(linestream, cell, ','))
 		{
-			//if (i != 2 && i != 4) RemoveQuotes(cell);
+			if (i != 2 && i != 4) RemoveQuotes(cell);
 			stringstream cellstream(cell);
 			if (i == 0)
 				cellstream >> position;

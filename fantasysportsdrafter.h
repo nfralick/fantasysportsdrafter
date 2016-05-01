@@ -4,6 +4,7 @@
 #include <string>
 #include <queue>
 #include <unordered_map>
+#include <unordered_set>
 #include <set>
 #include <functional>
 #include <array>
@@ -14,7 +15,7 @@ using namespace std;
 
 const int SALARY_MAX = 50000;
 const double PERCENTAGE_TO_PRUNE = 0.01;
-const int NUM_TEAMS = 100;
+const int NUM_TEAMS = 5000;
 
 enum class BaseballPositionsEnum
 {
@@ -166,16 +167,50 @@ public:
 	std::string GetName() const { return m_name; }
 };
 
-// Holds results of a player subset from a position
-struct PositionResultsStruct
+bool operator < (const BaseballPlayerClass& lhs, const BaseballPlayerClass &rhs)
 {
+	if (lhs.GetPositionFromPlayer() < rhs.GetPositionFromPlayer())
+		return true;
+	
+	else if (lhs.GetPositionFromPlayer() == rhs.GetPositionFromPlayer())
+		return lhs.GetName() < rhs.GetName();
+
+	return false;
+}
+
+bool operator == (const BaseballPlayerClass& lhs, const BaseballPlayerClass &rhs)
+{
+	return lhs.GetPositionFromPlayer() == rhs.GetPositionFromPlayer() &&
+		   lhs.GetName() == rhs.GetName();
+}
+
+bool operator > (const BaseballPlayerClass& lhs, const BaseballPlayerClass &rhs)
+{
+	return !(lhs < rhs) && !(lhs == rhs);
+}
+
+// Holds results of a player subset from a position
+struct PositionResultsClass
+{
+private:
+	std::vector<BaseballPlayerClass> m_players;
 	double points = 0;
 	int salary = 0;
-	vector<int> selections;
-	BaseballPositionsEnum position;
 
-	PositionResultsStruct(double _points, int _salary, const vector<int> &_selections, BaseballPositionsEnum _position)
-		: points(_points), salary(_salary), selections(_selections), position(_position) { }
+public:
+	PositionResultsClass(const std::vector<BaseballPlayerClass> &players)
+		: m_players(players) 
+		{
+			for (const auto &player : players)
+			{
+				points += player.GetPoints();
+				salary += player.GetSalary();
+			}
+		}
+
+	double GetPoints() const { return points; }
+	int GetSalary() const { return salary; }
+	std::vector<BaseballPlayerClass> GetPlayers() const { return m_players; }
 };
 
 // Holds all possible players in a position
@@ -183,7 +218,7 @@ struct PositionResultsStruct
 class BaseballPositionClass
 {
 	NChooseRClass m_chooser;
-	vector<BaseballPlayerClass> m_players; // MAINTAIN THE ORDER OF THIS YOU SHIT
+	vector<BaseballPlayerClass> m_players; // MAINTAIN THE ORDER OF THIS YOU SHIT (once permutations have started)
 	bool m_isFinished;
 
 	BaseballPositionsEnum m_position;
@@ -247,24 +282,20 @@ public:
 		}
 	}
 
-	PositionResultsStruct GetNextPermutation()
+	PositionResultsClass GetNextPermutation()
 	{
 		if (m_isFinished)
 			throw 1;
 
-		double points = 0;
-		int salary = 0;
+		std::vector<BaseballPlayerClass> permutationOfPlayers;
 
 		auto playerSelection = m_chooser.GetNextPermutation();
 		for (int i = 0; i < playerSelection.size(); i++)
-		{
-			points += m_players[playerSelection[i]].GetPoints();
-			salary += m_players[playerSelection[i]].GetSalary();
-		}
+			permutationOfPlayers.push_back(m_players[playerSelection[i]]);
 
 		m_isFinished = m_chooser.IsFinished();
 
-		return PositionResultsStruct(points, salary, std::move(playerSelection), m_position);
+		return PositionResultsClass(std::move(permutationOfPlayers));
 	}
 
 	double GetMaxPoints() const { return m_maxPoints; }
@@ -287,38 +318,37 @@ public:
 
 };
 
+auto BaseballPlayerClassHasher = [](const BaseballPlayerClass& player) {return std::hash<std::string>()(player.GetName());  };
+
 class TeamClass
 {
-	std::unordered_map<BaseballPositionsEnum, std::set<int>>  playerIndices;
+	std::set<BaseballPlayerClass> m_players;
 
-	int m_teamSalary;
-	double m_teamPoints;
+	int m_teamSalary = 0;
+	double m_teamPoints = 0;
 
 public:
-	void AddPlayers(PositionResultsStruct positionResults)
+	void AddPlayers(const PositionResultsClass &positionResults)
 	{
-		m_teamSalary += positionResults.salary;
-		m_teamPoints += positionResults.points;
+		m_teamSalary += positionResults.GetSalary();
+		m_teamPoints += positionResults.GetPoints();
 
-		auto &positionPlayerSet = playerIndices[positionResults.position];
-		for (auto selection : positionResults.selections)
-			positionPlayerSet.insert(selection);
+		for (const auto &player : positionResults.GetPlayers())
+			m_players.insert(player);
 	}
 
-	void RemovePlayers(PositionResultsStruct positionResults)
+	void RemovePlayers(const PositionResultsClass &positionResults)
 	{
-		playerIndices.erase(positionResults.position);
+		for (const auto &player : positionResults.GetPlayers())
+			m_players.erase(player);
 
-		m_teamSalary -= positionResults.salary;
-		m_teamPoints -= positionResults.points;
+		m_teamSalary -= positionResults.GetSalary();
+		m_teamPoints -= positionResults.GetPoints();
 	}
 
 	int GetTeamSalary() const { return m_teamSalary; }
 	double GetTeamPoints() const { return m_teamPoints; }
-	std::unordered_map<BaseballPositionsEnum, std::set<int>> GetPlayers()
-	{
-		return playerIndices;
-	}
+	std::set<BaseballPlayerClass> GetPlayers() const { return m_players; }
 };
 
 bool operator < (const TeamClass &lhs, const TeamClass &rhs)
@@ -345,7 +375,7 @@ public:
 		if (bestTeams.size() < m_numTeams)
 			bestTeams.push(team);
 
-		if (bestTeams.top() < team)
+		else if (bestTeams.top() < team)
 		{
 			bestTeams.pop();
 			bestTeams.push(team);
