@@ -1,149 +1,11 @@
 #pragma once
-#include <iostream>
-#include <vector>
-#include <string>
-#include <queue>
-#include <unordered_map>
-#include <unordered_set>
-#include <set>
-#include <functional>
-#include <array>
-#include <algorithm>
-#include <cassert>
+#include "Header.h"
 
 using namespace std;
 
 const int SALARY_MAX = 50000;
 const double PERCENTAGE_TO_PRUNE = 0.01;
 const int NUM_TEAMS = 5000;
-
-enum class BaseballPositionsEnum
-{
-	PITCHER,
-	CATCHER,
-	OUTFIELDER,
-	SHORTSTOP,
-	FIRSTBASE,
-	SECONDBASE,
-	THIRDBASE,
-	MAX
-};
-
-std::string BaseballPositionEnumToString(BaseballPositionsEnum position)
-{
-	switch (position)
-	{
-	case BaseballPositionsEnum::PITCHER:
-		return "SP";
-	case BaseballPositionsEnum::CATCHER:
-		return "C";
-	case BaseballPositionsEnum::OUTFIELDER:
-		return "OF";
-	case BaseballPositionsEnum::SHORTSTOP:
-		return "SS";
-	case BaseballPositionsEnum::FIRSTBASE:
-		return "1B";
-	case BaseballPositionsEnum::SECONDBASE:
-		return "2B";
-	case BaseballPositionsEnum::THIRDBASE:
-		return "3B";
-	default:
-		throw 1;
-	}
-}
-
-BaseballPositionsEnum StringToBaseballPositionEnum(std::string position)
-{
-	// @TODO consider players with multiple positions
-	if (position == "SP")
-		return BaseballPositionsEnum::PITCHER;
-	else if (position == "C")
-		return BaseballPositionsEnum::CATCHER;
-	else if (position == "OF")
-		return BaseballPositionsEnum::OUTFIELDER;
-	else if (position == "SS")
-		return BaseballPositionsEnum::SHORTSTOP;
-	else if (position == "1B")
-		return BaseballPositionsEnum::FIRSTBASE;
-	else if (position == "2B")
-		return BaseballPositionsEnum::SECONDBASE;
-	else if (position == "3B")
-		return BaseballPositionsEnum::THIRDBASE;
-	else
-		throw 1;
-}
-
-int NumPlayersInPosition(BaseballPositionsEnum position)
-{
-	switch (position)
-	{
-	case BaseballPositionsEnum::PITCHER:
-		return 2;
-	case BaseballPositionsEnum::CATCHER:
-		return 1;
-	case BaseballPositionsEnum::OUTFIELDER:
-		return 3;
-	case BaseballPositionsEnum::SHORTSTOP:
-		return 1;
-	case BaseballPositionsEnum::FIRSTBASE:
-		return 1;
-	case BaseballPositionsEnum::SECONDBASE:
-		return 1;
-	case BaseballPositionsEnum::THIRDBASE:
-		return 1;
-	default:
-		throw 1;
-	}
-}
-
-// Generates all subsets of size r from n
-// When finished, call Reset() to generate all subsets again
-class NChooseRClass
-{
-	std::vector<bool> m_selectionsVector;
-	int m_n = 0, m_r = 0;
-	bool m_isFinished = false;
-
-public:
-
-	void Initialize(int n, int r)
-	{
-		m_n = n;
-		m_r = r;
-
-		m_selectionsVector.resize(m_n);
-		std::fill(m_selectionsVector.begin() + m_n - m_r, m_selectionsVector.end(), true);
-	}
-
-	std::vector<int> GetNextPermutation()
-	{
-		assert(m_n != 0 && m_r != 0);
-
-		if (m_isFinished)
-			throw 1;
-
-		std::vector<int> selections;
-
-		for (int i = 0; i < m_n; i++)
-		{
-			if (m_selectionsVector[i])
-				selections.push_back(i);
-		}
-
-		m_isFinished = !std::next_permutation(m_selectionsVector.begin(), m_selectionsVector.end());
-		return selections;
-	}
-
-	bool IsFinished() const
-	{
-		return m_isFinished;
-	}
-
-	void Reset()
-	{
-		m_isFinished = false;
-	}
-};
 
 class BaseballPlayerClass
 {
@@ -156,22 +18,25 @@ class BaseballPlayerClass
 
 	std::string m_name;
 
+	BaseballHandedness m_handedness = BaseballHandedness::UNKNOWN;
+
 public:
-	BaseballPlayerClass(const std::string &name, double points, int salary, BaseballPositionsEnum position) :
-		m_name(name), m_points(points), m_salary(salary), m_position(position), m_pointsPerSalary(points / salary) { }
+	BaseballPlayerClass(const std::string &name, double points, int salary, BaseballPositionsEnum position, BaseballHandedness handedness = BaseballHandedness::UNKNOWN) :
+		m_name(name), m_points(points), m_salary(salary), m_position(position), m_pointsPerSalary(points / salary), m_handedness(handedness) { }
 
 	double GetPoints() const { return m_points; }
 	int GetSalary() const { return m_salary; }
 	double GetPointsPerSalary() const { return m_pointsPerSalary; }
 	BaseballPositionsEnum GetPositionFromPlayer() const { return m_position; }
 	std::string GetName() const { return m_name; }
+	BaseballHandedness GetHandedness() const { return m_handedness; }
 };
 
 bool operator < (const BaseballPlayerClass& lhs, const BaseballPlayerClass &rhs)
 {
 	if (lhs.GetPositionFromPlayer() < rhs.GetPositionFromPlayer())
 		return true;
-	
+
 	else if (lhs.GetPositionFromPlayer() == rhs.GetPositionFromPlayer())
 		return lhs.GetName() < rhs.GetName();
 
@@ -181,7 +46,7 @@ bool operator < (const BaseballPlayerClass& lhs, const BaseballPlayerClass &rhs)
 bool operator == (const BaseballPlayerClass& lhs, const BaseballPlayerClass &rhs)
 {
 	return lhs.GetPositionFromPlayer() == rhs.GetPositionFromPlayer() &&
-		   lhs.GetName() == rhs.GetName();
+		lhs.GetName() == rhs.GetName();
 }
 
 bool operator > (const BaseballPlayerClass& lhs, const BaseballPlayerClass &rhs)
@@ -322,7 +187,7 @@ public:
 
 auto BaseballPlayerClassHasher = [](const BaseballPlayerClass& player) {return std::hash<std::string>()(player.GetName());  };
 
-class TeamClass
+class LineupClass
 {
 	std::set<BaseballPlayerClass> m_players;
 
@@ -353,26 +218,26 @@ public:
 	std::set<BaseballPlayerClass> GetPlayers() const { return m_players; }
 };
 
-bool operator < (const TeamClass &lhs, const TeamClass &rhs)
+bool operator < (const LineupClass &lhs, const LineupClass &rhs)
 {
 	return lhs.GetTeamPoints() < rhs.GetTeamPoints();
 }
 
-bool operator > (const TeamClass &lhs, const TeamClass &rhs)
+bool operator > (const LineupClass &lhs, const LineupClass &rhs)
 {
 	return lhs.GetTeamPoints() > rhs.GetTeamPoints();
 }
 
-class BestNTeamsClass
+class BestNLineupsClass
 {
 	int m_numTeams;
-	std::priority_queue<TeamClass, std::vector<TeamClass>, std::greater<TeamClass>> bestTeams;
+	std::priority_queue<LineupClass, std::vector<LineupClass>, std::greater<LineupClass>> bestTeams;
 
 public:
-	BestNTeamsClass(int n) :
+	BestNLineupsClass(int n) :
 		m_numTeams(n) { }
 
-	void AddTeamIfGood(const TeamClass &team)
+	void AddTeamIfGood(const LineupClass &team)
 	{
 		if (bestTeams.size() < m_numTeams)
 			bestTeams.push(team);
@@ -392,11 +257,11 @@ public:
 		return bestTeams.top().GetTeamPoints();
 	}
 
-	std::priority_queue<TeamClass> GetBestTeams() const
+	std::priority_queue<LineupClass> GetBestTeams() const
 	{
 		auto bestTeamsCopy = bestTeams;
 
-		std::priority_queue<TeamClass> returnSet;
+		std::priority_queue<LineupClass> returnSet;
 		while (bestTeamsCopy.size())
 		{
 			returnSet.push(std::move(bestTeamsCopy.top()));
