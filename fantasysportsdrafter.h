@@ -257,6 +257,8 @@ public:
 	{
 		PruneLowestPointsPerSalary();
 
+		// Put players with highest points towards the end of the vector
+		// NChooseRClass starts by selecting those players, so this helps with pruning (~20x speed increase)
 		sort(m_players.begin(), m_players.end(), [](const BaseballPlayerClass & lhs, const BaseballPlayerClass& rhs) {return lhs.GetPoints() < rhs.GetPoints(); });
 
 		m_chooser.Initialize(m_players.size(), m_numPlayersFromPositionInFinalTeam);

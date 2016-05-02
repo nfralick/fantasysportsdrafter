@@ -107,13 +107,7 @@ void PositionRecurserHelper(vector<BaseballPositionClass> &positions, int curren
 
 BestNTeamsClass PositionRecurser(vector<BaseballPositionClass> &positions)
 {
-	// sort positions by...something?
-	// average salary?
-	// max salary?
-	// num players chosen from position?
-
-	// compute minimum salaries for all position
-	// compute maximum points for all position
+	// Get pruning information
 	vector<int> minSalaryFromIndex(positions.size() + 1);
 	for (int i = positions.size() - 1; i >= 0; i--)
 		minSalaryFromIndex[i] = positions[i].GetMinSalary() + minSalaryFromIndex[i + 1];
@@ -238,10 +232,12 @@ vector<BaseballPositionClass> ReadFromCsv(std::string filepath, std::set<std::st
 		returnValue.push_back(std::move(baseballPosition));
 	}
 
+	// Sort so that highest salaries are at the beginning of the vector
+	// This helps with pruning (test with sample size of 1 showed ~322x speed increase vs the reverse)
 	sort(returnValue.begin(), returnValue.end(),
-			[](const BaseballPositionClass& lhs, const BaseballPositionClass &rhs)
-			{
-				return NumPlayersInPosition(lhs.GetPosition()) > NumPlayersInPosition(rhs.GetPosition());
+		[](const BaseballPositionClass& lhs, const BaseballPositionClass &rhs)
+		{
+			return lhs.GetMinSalary() > rhs.GetMinSalary();
 		});
 
 	return returnValue;
