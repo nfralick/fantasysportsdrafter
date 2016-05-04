@@ -1,15 +1,5 @@
 #include "Header.h"
 
-unordered_map<std::string, vector<BaseballPlayerClass>> PlayersPerTeam;
-
-
-
-enum class BaseballScoringEnum
-{
-	PITCHER,
-	HITTER
-};
-
 void PositionRecurserHelper(vector<BaseballPositionClass> &positions, int currentPositionIndex, BestNLineupsClass &bestNTeams, LineupClass &currentTeam, const vector<int> &minSalaryFromIndex, const vector<double> maxPointsFromIndex)
 {
 	// prune!
@@ -63,6 +53,11 @@ BestNLineupsClass PositionRecurser(vector<BaseballPositionClass> &positions)
 
 int main()
 {
+
+	CreatePositionListFromFileClass asdf;
+	asdf.asdf();
+
+
 	std::set<std::string> playerNames = GetPlayerNamesFromFile("C:\\Users\\Nathan\\Downloads\\playernames429.txt");
 	auto positionList = ReadFromCsv("C:\\Users\\Nathan\\Downloads\\DKSalaries (8).csv", playerNames);
 

@@ -5,6 +5,7 @@ enum class BaseballHandedness
 {
 	LEFT,
 	RIGHT,
+	SWITCH,
 	UNKNOWN
 };
 
@@ -17,6 +18,7 @@ enum class BaseballPositionsEnum
 	FIRSTBASE,
 	SECONDBASE,
 	THIRDBASE,
+	DH,
 	MAX
 };
 
@@ -46,11 +48,11 @@ std::string BaseballPositionEnumToString(BaseballPositionsEnum position)
 BaseballPositionsEnum StringToBaseballPositionEnum(std::string position)
 {
 	// @TODO consider players with multiple positions
-	if (position == "SP")
+	if (position == "SP" || position == "P")
 		return BaseballPositionsEnum::PITCHER;
 	else if (position == "C")
 		return BaseballPositionsEnum::CATCHER;
-	else if (position == "OF")
+	else if (position == "OF" || position == "LF" || position == "RF" || position == "CF")
 		return BaseballPositionsEnum::OUTFIELDER;
 	else if (position == "SS")
 		return BaseballPositionsEnum::SHORTSTOP;
@@ -60,6 +62,8 @@ BaseballPositionsEnum StringToBaseballPositionEnum(std::string position)
 		return BaseballPositionsEnum::SECONDBASE;
 	else if (position == "3B")
 		return BaseballPositionsEnum::THIRDBASE;
+	else if (position == "DH")
+		return BaseballPositionsEnum::DH;
 	else
 		throw 1;
 }

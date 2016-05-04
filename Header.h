@@ -12,6 +12,8 @@
 #include <cassert>
 #include <fstream>
 #include <sstream>
+#include "json/json.h"
+#include "json/json-forwards.h"
 
 class BaseballPlayerClass;
 

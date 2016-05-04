@@ -11,25 +11,21 @@ class BaseballPlayerClass
 {
 	double m_points;
 	int m_salary;
-
 	double m_pointsPerSalary;
+	std::string m_name;
 
 	BaseballPositionsEnum m_position;
 
-	std::string m_name;
-
-	BaseballHandedness m_handedness = BaseballHandedness::UNKNOWN;
-
 public:
-	BaseballPlayerClass(const std::string &name, double points, int salary, BaseballPositionsEnum position, BaseballHandedness handedness = BaseballHandedness::UNKNOWN) :
-		m_name(name), m_points(points), m_salary(salary), m_position(position), m_pointsPerSalary(points / salary), m_handedness(handedness) { }
+	BaseballPlayerClass(const std::string &name, double points, int salary, BaseballPositionsEnum position) : 
+		m_name(name), m_points(points), m_salary(salary), m_position(position), m_pointsPerSalary(points / salary)
+	{ }
 
 	double GetPoints() const { return m_points; }
 	int GetSalary() const { return m_salary; }
 	double GetPointsPerSalary() const { return m_pointsPerSalary; }
 	BaseballPositionsEnum GetPositionFromPlayer() const { return m_position; }
 	std::string GetName() const { return m_name; }
-	BaseballHandedness GetHandedness() const { return m_handedness; }
 };
 
 bool operator < (const BaseballPlayerClass& lhs, const BaseballPlayerClass &rhs)
