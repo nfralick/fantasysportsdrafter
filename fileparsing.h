@@ -283,14 +283,16 @@ public:
 		file >> root;
 
 		auto stringtohand = [](std::string handstring) {
+			assert( handstring == "R" || 
+					handstring == "L" ||
+					handstring == "S");
+			
 			if (handstring == "R")
-				return BaseballHandedness::LEFT;
-			else if (handstring == "L")
 				return BaseballHandedness::RIGHT;
+			else if (handstring == "L")
+				return BaseballHandedness::LEFT;
 			else if (handstring == "S")
 				return BaseballHandedness::SWITCH;
-
-			throw 1;
 		};
 
 		// First pass: Get handedness, team infromation
