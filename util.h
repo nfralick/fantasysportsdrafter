@@ -140,12 +140,44 @@ public:
 	}
 };
 
-double GetPitcherPoints(int IP, int SO, int win, int ERA, int HA, int BBA, int HB, int complete, int shutout, int nohitter)
+double GetPitcherPoints(int games, int IP, int SO, int win, int ERA, int HA, int BBA, int HB, int complete, int shutout, int nohitter)
 {
 	return IP * 2.25 + SO * 2 + win * 4 + ERA * -2 + HA * -0.6 + BBA * -0.6 + HB * -0.6 + complete * 2.5 + shutout * 2.5 + nohitter * 5;
 }
 
 double GetHitterPoints(int singles, int doubles, int triples, int HR, int RBI, int runs, int SB, int HPB, int BoB)
 {
-	return singles * 3 + doubles * 5 + triples * 8 + HR * 10 + RBI * 2 + runs * 2 + SB * 5 + HPB * 2 + SB * 5;
+	return singles * 3 + doubles * 5 + triples * 8 + HR * 10 + RBI * 2 + runs * 2 + SB * 5 + HPB * 2 + SB * 5 + BoB * 2;
+}
+
+double GetPitcherPoints(Json::Value vsBatterHandJson)
+{
+	// TODO some needed stats aren't in the thing, ike IP, wins, games complete, shutouts, nohitters, 
+	// IP and wins are most important, probably don't need the others (well okay maybe games complete)
+	// so we need to tell tim "hey buddy"
+	int games = vsBatterHandJson.get("G", 0).asInt();
+	int IP = vsBatterHandJson.get("IP", 0).asInt();
+	int SO = vsBatterHandJson.get("SO", 0).asInt();
+	int ERA = vsBatterHandJson.get("R", 0).asInt();
+	int HA = vsBatterHandJson.get("H", 0).asInt();
+	int BBA = vsBatterHandJson.get("BB", 0).asInt();
+	int HB = vsBatterHandJson.get("HPB", 0).asInt();
+	//int SO = vsBatterHandJson.get("IP", -1).asInt();
+	//int SO = vsBatterHandJson.get("IP", -1).asInt();
+	//int SO = vsBatterHandJson.get("IP", -1).asInt();
+	//int SO = vsBatterHandJson.get("IP", -1).asInt();
+
+
+	return 0;
+	//return GetPitcherPoints(vsBatterHandJson.get("IP", 0).asInt(), vsBatterHandJson.get("IP", 0).asInt(), vsBatterHandJson.get("IP", 0).asInt(), )
+}
+
+
+
+double GetHitterPoints(Json::Value vsPitcherHandJson)
+{
+	int singles = vsPitcherHandJson.get("H", 0).asInt() - vsPitcherHandJson.get("2B", 0).asInt() - vsPitcherHandJson.get("3B", 0).asInt() - vsPitcherHandJson.get("HR", 0).asInt();
+	return GetHitterPoints(singles, vsPitcherHandJson.get("2B", 0).asInt(), vsPitcherHandJson.get("3B", 0).asInt(), vsPitcherHandJson.get("HR", 0).asInt(),
+		vsPitcherHandJson.get("RBI", 0).asInt(), vsPitcherHandJson.get("R", 0).asInt(), 
+		vsPitcherHandJson.get("SB", 0).asInt(), vsPitcherHandJson.get("HPB", 0).asInt(), vsPitcherHandJson.get("BB", 0).asInt());
 }

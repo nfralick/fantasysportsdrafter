@@ -249,10 +249,6 @@ class CreatePositionListFromFileClass
 	unordered_map<std::string, std::string> m_teamNameToOpponentNameMap;
 
 public:
-		void asdf()
-	{
-
-	}
 
 	void AddOpposingTeam(std::string teamName, std::string opponentTeamName)
 	{
@@ -328,11 +324,12 @@ public:
 			else if (position != BaseballPositionsEnum::PITCHER)
 			{
 				auto opposingPitcherHand = m_teamNameToTeamMap.at(opposingTeam).GetPitcherHandedness();
-				auto vsPitcherHand = opposingPitcherHand == BaseballHandedness::LEFT ? playerJson["vsLHS"] : playerJson["vsRHS"];
+				auto asdf = playerJson["vsLHS"];
+				//auto vsPitcherHand = opposingPitcherHand == BaseballHandedness::LEFT ? GetHitterPoints(playerJson["vsLHS"]) : GetHitterPoints(playerJson["vsRHS"]);
 
 				// sad story: stats only has hits, not singles, so singles have to be calculated
 				//GetHitterPoints(vsPitcherHand.get("singles", 0).asInt(), vsPitcherHand.get("2B", 0).asInt(), vsPitcherHand.get("3B", 0).asInt(), vsPitcherHand.get("HR", 0).asInt(),
-				//	vsPitcherHand.get("singles", 0).asInt(), vsPitcherHand.get("singles", 0).asInt(), vsPitcherHand.get("singles", 0).asInt(), vsPitcherHand.get("singles", 0).asInt())
+				//	vsPitcherHand.get("singles", 0).asInt(), vsPitcherHand.get("singles", 0).asInt(), vsPitcherHand.get("singles", 0).asInt(), vsPitcherHand.get("singles", 0).asInt(), 0);
 
 				// these are defined in util.h
 				//double GetPitcherPoints(int IP, int SO, int win, int ERA, int HA, int BBA, int HB, int complete, int shutout, int nohitter)
@@ -350,5 +347,6 @@ public:
 			}
 		}
 
+		return positionList;
 	}
 };

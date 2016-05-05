@@ -55,7 +55,7 @@ int main()
 {
 
 	CreatePositionListFromFileClass asdf;
-	asdf.asdf();
+	asdf.GetPositionList();
 
 
 	std::set<std::string> playerNames = GetPlayerNamesFromFile("C:\\Users\\Nathan\\Downloads\\playernames429.txt");
