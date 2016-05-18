@@ -18,4 +18,5 @@ class PlayerStats(scrapy.Item):
 	vRHB = scrapy.Field()
 	team = scrapy.Field()
 	against = scrapy.Field()
+	gamelog = scrapy.Field()
 	pass

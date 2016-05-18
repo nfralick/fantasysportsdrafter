@@ -5,9 +5,10 @@ from player_stats.items import PlayerStats
 class LineupsSpider(scrapy.Spider):
 	name = "lineups"
 	allowed_domains = ["baseballpress.com", "baseball-reference.com"]
-	start_urls = ['http://www.baseballpress.com/lineups/2016-04-29']
+	start_urls = ['http://www.baseballpress.com/lineups/2016-05-13']
 	hcolumns = ["G","GS","PA","AB","R","H","2B","3B","HR","RBI","SB","CS","BB","SO","BA","OBP","SLG","OPS","TB","GDP","HBP","SH","SF","IBB","ROE","BAbip","tOPS+","sOPS+"]
 	pcolumns = ["G","PA","AB","R","H","2B","3B","HR","SB","CS","BB","SO","SO/W","BA","OBP","SLG","OPS","TB","GDP","HBP","SH","SF","IBB","ROE","BAbip","tOPS+","sOPS+"]
+	pglcolumns = ["Gcar","Gtm","Date","Tm","Home","Opp","Rslt","Inngs","Dec","DR","IP","H","R","ER","BB","SO","HR","HBP","ERA","BF","Pit","Str","StL","StS","GB","FB","LD","PU","Unk","GSc","IR","IS","SB","CS","PO","AB","2B","3B","IBB","GDP","SF","ROE","aLI","WPA","RE24","DFS(DK)","DFS(FD)","Entered","Exited"]
 	def parse(self, response):
 		for game in response.css('.game'):
 			teams = []
@@ -22,11 +23,17 @@ class LineupsSpider(scrapy.Spider):
 				player['hand'] = team_header.xpath('div/div/text()').extract()[1][2]
 				player['team'] = teams[pitcher_number]
 				player['against'] = teams[-1 + pitcher_number]
+				pitcher_number += 1
 				bref = team_header.css('.player-link').xpath('@data-bref').extract()[0]
+
 				url = "http://www.baseball-reference.com/players/split.cgi?id=" + bref + "&year=2016&t=p"
 				request = scrapy.Request(response.urljoin(url), self.parse_pitcher_stats)
 			 	request.meta['item'] = player
-			 	pitcher_number += 1
+				yield request
+
+				url = "http://www.baseball-reference.com/players/gl.cgi?id=" + bref + "&year=2016&t=p"
+				request = scrapy.Request(response.urljoin(url), self.parse_pitcher_stats2)
+			 	request.meta['item'] = player
 				yield request
 
 			players = 0
@@ -37,11 +44,11 @@ class LineupsSpider(scrapy.Spider):
 				player['order'] = int(player_div.xpath('text()').extract()[0][0])
 				player['position'] = player_div.xpath('text()').extract()[1][-2:].strip()
 				player['hand'] = player_div.xpath('text()').extract()[1][2]
-				if players < 11:
-					player['team'] = teams[0]
+				if players < 10:
+					player['team'] = players
 					player['against'] = teams[1]
 				else:
-					player['team'] = teams[1]
+					player['team'] = players
 					player['against'] = teams[0]
 				bref = player_div.xpath('a/@data-bref').extract()[0]
 				url = "http://www.baseball-reference.com/players/split.cgi?id=" + bref + "&year=2016&t=b"
@@ -89,6 +96,23 @@ class LineupsSpider(scrapy.Spider):
 						break
 					if cell.xpath('text()').extract():
 						player[row_type][self.pcolumns[cell_num-1]] = float(cell.xpath('text()').extract()[0])
+				cell_num += 1
+
+		yield player
+
+	def parse_pitcher_stats2(self, response):
+		player = response.meta['item']
+		player['gamelog'] = []
+		for row in response.css('#pitching_gamelogs').xpath('tbody/tr'):
+			cell_num = 0
+			for cell in row.css('td'):
+				if cell_num == 0:
+					player['gamelog'].append({});
+				else:
+					if cell.xpath('text()').extract():
+						player['gamelog'][-1][self.pglcolumns[cell_num-1]] = cell.xpath('text()').extract()[0]
+					elif cell.xpath('a/text()').extract():
+						player['gamelog'][-1][self.pglcolumns[cell_num-1]] = cell.xpath('a/text()').extract()[0]
 				cell_num += 1
 
 		yield player
