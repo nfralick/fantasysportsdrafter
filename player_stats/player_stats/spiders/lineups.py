@@ -113,6 +113,8 @@ class LineupsSpider(scrapy.Spider):
 						player['gamelog'][-1][self.pglcolumns[cell_num-1]] = cell.xpath('text()').extract()[0]
 					elif cell.xpath('a/text()').extract():
 						player['gamelog'][-1][self.pglcolumns[cell_num-1]] = cell.xpath('a/text()').extract()[0]
+					elif cell.xpath('span/text()').extract():
+						player['gamelog'][-1][self.pglcolumns[cell_num-1]] = cell.xpath('span/text()').extract()[0]
 				cell_num += 1
 
 		yield player
