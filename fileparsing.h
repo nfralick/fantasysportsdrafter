@@ -243,6 +243,7 @@ public:
 };
 
 // this class should maybe just be a function, not a class
+// will change once the getting-of-players-from-internet code is closer to finished
 class CreatePositionListFromFileClass
 {
 	unordered_map<std::string, TeamHandednessClass> m_teamNameToTeamMap;
@@ -272,7 +273,7 @@ public:
 	{
 		assert(m_teamNameToTeamMap.size() == m_teamNameToOpponentNameMap.size() / 2);
 
-		std::vector<BaseballPositionClass> positionList;
+		unordered_map<BaseballPositionsEnum, vector<BaseballPlayerClass>> positionMap;
 
 		Json::Value root;
 		ifstream file("C:\\Users\\Nathan\\Documents\\GitHub\\fantasysportsdrafter\\butts", std::ifstream::binary);
@@ -304,7 +305,6 @@ public:
 			AddPlayer(team, name, hand, position);
 		}
 
-
 		// Second pass: Generate player points and add to a vector of BaseballPositionClass to return
 		for (auto& playerJson : root)
 		{
@@ -320,11 +320,22 @@ public:
 			{
 				// get count of opponent lefties and righties
 				// consider what to do with switch hitters -- perhaps count them as whichever the pitcher is worse against?
+				positionMap[position].push_back(BaseballPlayerClass(name, 0, 0, position));
 			}
 			else if (position != BaseballPositionsEnum::PITCHER)
 			{
 				auto opposingPitcherHand = m_teamNameToTeamMap.at(opposingTeam).GetPitcherHandedness();
-				auto asdf = playerJson["vsLHS"];
+				auto points = [&]() -> double
+					{
+						if (opposingPitcherHand == BaseballHandedness::LEFT)
+							return GetHitterPoints(playerJson["vsLHS"]);
+						else if (opposingPitcherHand == BaseballHandedness::RIGHT)
+							return GetHitterPoints(playerJson["vsRHS"]);
+
+						throw 1;
+					}();
+
+				positionMap[position].push_back(BaseballPlayerClass(name, points, playerJson.get("salary", 0).asInt(), position));
 				//auto vsPitcherHand = opposingPitcherHand == BaseballHandedness::LEFT ? GetHitterPoints(playerJson["vsLHS"]) : GetHitterPoints(playerJson["vsRHS"]);
 
 				// sad story: stats only has hits, not singles, so singles have to be calculated

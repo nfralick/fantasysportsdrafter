@@ -79,7 +79,7 @@ public:
 class BaseballPositionClass
 {
 	NChooseRClass m_chooser;
-	vector<BaseballPlayerClass> m_players; // MAINTAIN THE ORDER OF THIS YOU SHIT (once permutations have started)
+	vector<BaseballPlayerClass> m_players; // note: maintain the order of this once permutations have started
 	bool m_isFinished;
 
 	BaseballPositionsEnum m_position;

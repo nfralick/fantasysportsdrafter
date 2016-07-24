@@ -53,10 +53,8 @@ BestNLineupsClass PositionRecurser(vector<BaseballPositionClass> &positions)
 
 int main()
 {
-
 	CreatePositionListFromFileClass asdf;
 	asdf.GetPositionList();
-
 
 	std::set<std::string> playerNames = GetPlayerNamesFromFile("C:\\Users\\Nathan\\Downloads\\playernames429.txt");
 	auto positionList = ReadFromCsv("C:\\Users\\Nathan\\Downloads\\DKSalaries (8).csv", playerNames);
